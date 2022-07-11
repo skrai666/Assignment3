@@ -1,24 +1,20 @@
 import sqlite3
 
-# conn = sqlite3.connect("Employee.db")
-
-# c = conn.cursor()
-
-
 # Database class containing all database functions
 class DBOperations:
 
     def __init__(self):
         try:
-            self.conn = sqlite3.connect("DBName.db")
+            self.conn = sqlite3.connect("Employee.db")
             self.cur = self.conn.cursor()
+            self.initialise_table()
             self.conn.commit()
         except Exception as e:
             print(e)
 
 
     # Creates table
-    def create_table(self):
+    def initialise_table(self):
         with self.conn:
             # check if table exists, if not create table
             list_of_tables = self.cur.execute(
@@ -33,14 +29,21 @@ class DBOperations:
                             email TEXT NOT NULL,
                             salary REAL NOT NULL
                             )""")
-                print("Table successfully created")
+                return True
             else:
-                print("Warning: Table already created")
+                return False
+
+    # Calls function to initialise table and prints back to console if table has been made
+    def create_table(self):
+        if self.initialise_table():
+            print("Table successfully created")
+        else:
+            print("Warning: Table already created")
 
     # Calls methods to insert data into database
     def insert_data(self):
         employee = DBOperations.create_employee(self)
-        DBOperations.insert_employee(self, employee)
+        self.insert_employee(employee)
 
     # Intakes user input and creates employee instance using input
     def create_employee(self):
@@ -49,7 +52,7 @@ class DBOperations:
         forename = input("Employee forename: ").lower().strip()
         surname = input("Employee surname: ").lower().strip()
         email = input("Employee email: ").lower().strip()
-        salary = DBOperations.normalise_salary_type(self, input("Employee salary: "))
+        salary = self.normalise_salary_type(input("Employee salary: "))
         employee = Employee(id, title, forename, surname, email, salary)
         return employee
 
@@ -81,7 +84,7 @@ class DBOperations:
             self.cur.execute("SELECT * FROM employees")
             employee_data = self.cur.fetchall()
             if len(employee_data) > 0:
-                DBOperations.print_data(employee_data)
+                self.print_data(employee_data)
             else:
                 print("No records in database")
 
@@ -91,21 +94,21 @@ class DBOperations:
         criteria_function = 'search criterion'
         update_category_function = 'Select a category to update'
         update_criteria_function = 'update value'
-        search_category = DBOperations.get_category(category_function)
-        search_category = DBOperations.str_category(search_category)
-        search_criteria = DBOperations.get_criteria(criteria_function, search_category)
-        returned_data = DBOperations.search_selected(search_category, search_criteria)
+        search_category = self.get_category(category_function)
+        search_category = self.str_category(search_category)
+        search_criteria = self.get_criteria(criteria_function, search_category)
+        returned_data = self.search_selected(search_category, search_criteria)
         print(len(returned_data))
-        DBOperations.print_number_matching_update(returned_data)
-        DBOperations.print_data(returned_data)
+        self.print_number_matching_update(returned_data)
+        self.print_data(returned_data)
         if len(returned_data) == 0:
             return
         else:
-            int_update_category = DBOperations.get_update_category(update_category_function)
-            update_category = DBOperations.str_update_category(int_update_category)
-            update_criteria = DBOperations.get_criteria(update_criteria_function, update_category)
-            if DBOperations.confirm():
-                DBOperations.update_selected(search_category, search_criteria, update_category, update_criteria)
+            int_update_category = self.get_update_category(update_category_function)
+            update_category = self.str_update_category(int_update_category)
+            update_criteria = self.get_criteria(update_criteria_function, update_category)
+            if self.confirm():
+                self.update_selected(search_category, search_criteria, update_category, update_criteria)
                 print("Employee(s) successfully updated.")
             else:
                 return
@@ -150,12 +153,12 @@ class DBOperations:
     def search_data(self):
         category_function = 'Search'
         criteria_function = 'search criterion'
-        search_category = DBOperations.get_category(category_function)
-        search_category = DBOperations.str_category(search_category)
-        search_criteria = DBOperations.get_criteria(criteria_function, search_category)
-        returned_data = DBOperations.search_selected(search_category, search_criteria)
-        DBOperations.print_number_matching_search(returned_data)
-        DBOperations.print_data(returned_data)
+        search_category = self.get_category(category_function)
+        search_category = self.str_category(search_category)
+        search_criteria = self.get_criteria(criteria_function, search_category)
+        returned_data = self.search_selected(search_category, search_criteria)
+        self.print_number_matching_search(returned_data)
+        self.print_data(returned_data)
 
     # Prints heading stating the number of employees to be updated
     def print_number_matching_search(self, returned_data):
@@ -284,11 +287,11 @@ class DBOperations:
 
     # Deletes data from the database
     def delete_data(self):
-        user_delete_input = DBOperations.delete_menu()
+        user_delete_input = self.delete_menu()
         if user_delete_input == 1:
-            DBOperations.delete_all()
+            self.delete_all()
         elif user_delete_input == 2:
-            DBOperations.delete_employee()
+            self.delete_employee()
         elif user_delete_input == 3:
             return
 
@@ -316,7 +319,7 @@ class DBOperations:
     def delete_all(self):
         with self.conn:
             while True:
-                if DBOperations.confirm():
+                if self.confirm():
                     self.cur.execute("DELETE FROM employees")
                     print("All", self.cur.rowcount, "records have been deleted.")
                     print("No data remains.")
@@ -328,14 +331,14 @@ class DBOperations:
     def delete_employee(self):
         category_function = 'Delete'
         criteria_function = 'delete criterion'
-        delete_category = DBOperations.get_category(category_function)
-        delete_category = DBOperations.str_category(delete_category)
-        delete_criteria = DBOperations.get_criteria(criteria_function, delete_category)
-        returned_data = DBOperations.search_selected(delete_category, delete_criteria)
+        delete_category = self.get_category(category_function)
+        delete_category = self.str_category(delete_category)
+        delete_criteria = self.get_criteria(criteria_function, delete_category)
+        returned_data = self.search_selected(delete_category, delete_criteria)
         if len(returned_data) != 0:
-            if DBOperations.confirm():
-                DBOperations.print_employees_to_delete(returned_data)
-                DBOperations.delete_selected_employees(delete_category, delete_criteria)
+            if self.confirm():
+                self.print_employees_to_delete(returned_data)
+                self.delete_selected_employees(delete_category, delete_criteria)
                 print("Employee(s) successfully deleted")
             else:
                 return
@@ -349,7 +352,7 @@ class DBOperations:
             print("No employees match the delete criteria.")
         else:
             print("The following", str(len(returned_data)), "employee/s will be deleted: ")
-        DBOperations.print_data(returned_data)
+        self.print_data(returned_data)
 
     # Deletes matching employees
     def delete_selected_employees(self, delete_category, delete_criteria):
