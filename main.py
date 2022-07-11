@@ -9,8 +9,8 @@ c = conn.cursor()
 class DBOperations:
 
     # Creates table
-    @staticmethod
-    def create_table():
+
+    def create_table(self):
         with conn:
             # check if table exists, if not create table
             list_of_tables = c.execute(
