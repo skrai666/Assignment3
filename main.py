@@ -1,23 +1,27 @@
 import sqlite3
 
-conn = sqlite3.connect("Employee.db")
-
-c = conn.cursor()
-
-
 # Database class containing all database functions
 class DBOperations:
 
+    def __init__(self):
+        try:
+            self.conn = sqlite3.connect("Employee.db")
+            self.cur = self.conn.cursor()
+            self.initialise_table()
+            self.conn.commit()
+        except Exception as e:
+            print(e)
+
+
     # Creates table
-    @staticmethod
-    def create_table():
-        with conn:
+    def initialise_table(self):
+        with self.conn:
             # check if table exists, if not create table
-            list_of_tables = c.execute(
+            list_of_tables = self.cur.execute(
                 """SELECT name FROM sqlite_master WHERE type='table'
                     AND name='employees'; """).fetchall()
             if not list_of_tables:
-                c.execute("""CREATE TABLE IF NOT EXISTS employees (
+                self.cur.execute("""CREATE TABLE IF NOT EXISTS employees (
                             id INTEGER PRIMARY KEY AUTOINCREMENT,
                             title TEXT NOT NULL,
                             forename TEXT NOT NULL,
@@ -25,33 +29,37 @@ class DBOperations:
                             email TEXT NOT NULL,
                             salary REAL NOT NULL
                             )""")
-                print("Table successfully created")
+                return True
             else:
-                print("Warning: Table already created")
+                return False
+
+    # Calls function to initialise table and prints back to console if table has been made
+    def create_table(self):
+        if self.initialise_table():
+            print("Table successfully created")
+        else:
+            print("Warning: Table already created")
 
     # Calls methods to insert data into database
-    @staticmethod
-    def insert_data():
-        employee = DBOperations.create_employee()
-        DBOperations.insert_employee(employee)
+    def insert_data(self):
+        employee = DBOperations.create_employee(self)
+        self.insert_employee(employee)
 
     # Intakes user input and creates employee instance using input
-    @staticmethod
-    def create_employee():
+    def create_employee(self):
         id = None
         title = input("Employee title: ").lower()
         forename = input("Employee forename: ").lower().strip()
         surname = input("Employee surname: ").lower().strip()
         email = input("Employee email: ").lower().strip()
-        salary = DBOperations.normalise_salary_type(input("Employee salary: "))
+        salary = self.normalise_salary_type(input("Employee salary: "))
         employee = Employee(id, title, forename, surname, email, salary)
         return employee
 
     # Normalises salary
     # Converts salary to float and rounds salary to 2 decimal places
     # If user entry is not a number, i.e. cannot be converted, asks user to re-input salary
-    @staticmethod
-    def normalise_salary_type(salary):
+    def normalise_salary_type(self, salary):
         while True:
             try:
                 salary = "{:.2f}".format(float(salary))
@@ -62,55 +70,51 @@ class DBOperations:
         return salary
 
     # inserts employee into employee database
-    @staticmethod
-    def insert_employee(employee):
-        with conn:
-            c.execute("INSERT INTO employees VALUES (:id, :title, :forename, :surname, :email, :salary)",
+    def insert_employee(self, employee):
+        with self.conn:
+            self.cur.execute("INSERT INTO employees VALUES (:id, :title, :forename, :surname, :email, :salary)",
                       {'id': None, 'title': employee.title, 'forename': employee.forename, 'surname': employee.surname,
                        'email': employee.email,
                        'salary': employee.salary})
             print("Employee added.")
 
     # Gets all data from the database and prints to console
-    @staticmethod
-    def view_all_data():
-        with conn:
-            c.execute("SELECT * FROM employees")
-            employee_data = c.fetchall()
+    def view_all_data(self):
+        with self.conn:
+            self.cur.execute("SELECT * FROM employees")
+            employee_data = self.cur.fetchall()
             if len(employee_data) > 0:
-                DBOperations.print_data(employee_data)
+                self.print_data(employee_data)
             else:
                 print("No records in database")
 
     # Updates data matching user input in the database and prints updated record to console
-    @staticmethod
-    def update_data():
+    def update_data(self):
         category_function = 'Select users to update'
         criteria_function = 'search criterion'
         update_category_function = 'Select a category to update'
         update_criteria_function = 'update value'
-        search_category = DBOperations.get_category(category_function)
-        search_category = DBOperations.str_category(search_category)
-        search_criteria = DBOperations.get_criteria(criteria_function, search_category)
-        returned_data = DBOperations.search_selected(search_category, search_criteria)
+        search_category = self.get_category(category_function)
+        search_category = self.str_category(search_category)
+        search_criteria = self.get_criteria(criteria_function, search_category)
+        returned_data = self.search_selected(search_category, search_criteria)
         print(len(returned_data))
-        DBOperations.print_number_matching_update(returned_data)
-        DBOperations.print_data(returned_data)
+        self.print_number_matching_update(returned_data)
+        self.print_data(returned_data)
         if len(returned_data) == 0:
             return
         else:
-            int_update_category = DBOperations.get_update_category(update_category_function)
-            update_category = DBOperations.str_update_category(int_update_category)
-            update_criteria = DBOperations.get_criteria(update_criteria_function, update_category)
-            if DBOperations.confirm():
-                DBOperations.update_selected(search_category, search_criteria, update_category, update_criteria)
+            int_update_category = self.get_update_category(update_category_function)
+            update_category = self.str_update_category(int_update_category)
+            update_criteria = self.get_criteria(update_criteria_function, update_category)
+            if self.confirm():
+                self.update_selected(search_category, search_criteria, update_category, update_criteria)
                 print("Employee(s) successfully updated.")
             else:
                 return
 
     # Confirms with user if update should continue
-    @staticmethod
-    def confirm():
+    def confirm(self):
         while True:
             try:
                 user_confirmation = int(input("""
@@ -128,8 +132,7 @@ class DBOperations:
                 continue
 
     # Prints heading stating the number of employees to be updated
-    @staticmethod
-    def print_number_matching_update(data_to_update):
+    def print_number_matching_update(self, data_to_update):
         if len(data_to_update) == 0:
             print("\nNo employees match the update criteria.\n")
         elif len(data_to_update) == 1:
@@ -138,30 +141,27 @@ class DBOperations:
             print("\n", len(data_to_update), "employees will be updated. Employees: \n")
 
     # Searches the database for employees matching the search category and criteria
-    @staticmethod
-    def update_selected(search_category, search_criteria, update_category, update_criteria):
-        with conn:
-            c.execute(
+    def update_selected(self, search_category, search_criteria, update_category, update_criteria):
+        with self.conn:
+            self.cur.execute(
                 "UPDATE employees SET " + update_category + " = :update_criteria WHERE " + search_category +
                 " = :search_criteria",
                 {'search_criteria': search_criteria, 'update_criteria': update_criteria})
-        return c.fetchall()
+        return self.cur.fetchall()
 
     # Searches for data matching user input in the database and prints to console
-    @staticmethod
-    def search_data():
+    def search_data(self):
         category_function = 'Search'
         criteria_function = 'search criterion'
-        search_category = DBOperations.get_category(category_function)
-        search_category = DBOperations.str_category(search_category)
-        search_criteria = DBOperations.get_criteria(criteria_function, search_category)
-        returned_data = DBOperations.search_selected(search_category, search_criteria)
-        DBOperations.print_number_matching_search(returned_data)
-        DBOperations.print_data(returned_data)
+        search_category = self.get_category(category_function)
+        search_category = self.str_category(search_category)
+        search_criteria = self.get_criteria(criteria_function, search_category)
+        returned_data = self.search_selected(search_category, search_criteria)
+        self.print_number_matching_search(returned_data)
+        self.print_data(returned_data)
 
     # Prints heading stating the number of employees to be updated
-    @staticmethod
-    def print_number_matching_search(returned_data):
+    def print_number_matching_search(self, returned_data):
         if len(returned_data) == 0:
             print("No employees match the search criteria.")
         elif len(returned_data) == 1:
@@ -170,8 +170,7 @@ class DBOperations:
             print(len(returned_data), "employees have been found:")
 
     # Gets user category to update the database
-    @staticmethod
-    def get_update_category(category_function):
+    def get_update_category(self, category_function):
         while True:
             print(category_function + " using the following categories:")
             print("""
@@ -194,8 +193,7 @@ class DBOperations:
         return category
 
     # Converts update category number to variable name
-    @staticmethod
-    def str_update_category(int_category):
+    def str_update_category(self, int_category):
         if int_category == 1:
             category = str('title')
         elif int_category == 2:
@@ -209,8 +207,7 @@ class DBOperations:
         return category
 
     # Gets user category to search the database
-    @staticmethod
-    def get_category(category_function):
+    def get_category(self, category_function):
         while True:
             print(category_function + " using the following categories:")
             print("""
@@ -234,8 +231,7 @@ class DBOperations:
         return category
 
     # Converts search category number to variable name
-    @staticmethod
-    def str_category(int_category):
+    def str_category(self, int_category):
         if int_category == 1:
             category = str('id')
         elif int_category == 2:
@@ -251,8 +247,7 @@ class DBOperations:
         return category
 
     # Gets user criteria to search the database
-    @staticmethod
-    def get_criteria(criteria_function, category):
+    def get_criteria(self, criteria_function, category):
         while True:
             if category == 'id':
                 try:
@@ -275,8 +270,7 @@ class DBOperations:
         return criteria
 
     # Prints employee data to the console
-    @staticmethod
-    def print_data(employee_data):
+    def print_data(self, employee_data):
         for employee in employee_data:
             print("Employee ID: ", employee[0])
             print("Name: ", employee[1].title() + ' ' + employee[2].title() + ' ' + employee[3].title())
@@ -285,27 +279,24 @@ class DBOperations:
             print("\n")
 
     # Searches the database for employees matching the search category and criteria
-    @staticmethod
-    def search_selected(search_category, search_criteria):
-        with conn:
-            c.execute("SELECT * FROM employees WHERE " + search_category + " = :search_criteria",
+    def search_selected(self, search_category, search_criteria):
+        with self.conn:
+            self.cur.execute("SELECT * FROM employees WHERE " + search_category + " = :search_criteria",
                       {'search_criteria': search_criteria})
-        return c.fetchall()
+        return self.cur.fetchall()
 
     # Deletes data from the database
-    @staticmethod
-    def delete_data():
-        user_delete_input = DBOperations.delete_menu()
+    def delete_data(self):
+        user_delete_input = self.delete_menu()
         if user_delete_input == 1:
-            DBOperations.delete_all()
+            self.delete_all()
         elif user_delete_input == 2:
-            DBOperations.delete_employee()
+            self.delete_employee()
         elif user_delete_input == 3:
             return
 
     # Prints delete menu and intakes user choice
-    @staticmethod
-    def delete_menu():
+    def delete_menu(self):
         while True:
             print("""Please choose from the following delete options: 
                1. Delete all employees 
@@ -325,31 +316,29 @@ class DBOperations:
         return user_delete_input
 
     # Deletes all employees from the database
-    @staticmethod
-    def delete_all():
-        with conn:
+    def delete_all(self):
+        with self.conn:
             while True:
-                if DBOperations.confirm():
-                    c.execute("DELETE FROM employees")
-                    print("All", c.rowcount, "records have been deleted.")
+                if self.confirm():
+                    self.cur.execute("DELETE FROM employees")
+                    print("All", self.cur.rowcount, "records have been deleted.")
                     print("No data remains.")
                     return
                 else:
                     return
 
     # Calls functions to get user input delete category and criteria from the database and deletes matching employees
-    @staticmethod
-    def delete_employee():
+    def delete_employee(self):
         category_function = 'Delete'
         criteria_function = 'delete criterion'
-        delete_category = DBOperations.get_category(category_function)
-        delete_category = DBOperations.str_category(delete_category)
-        delete_criteria = DBOperations.get_criteria(criteria_function, delete_category)
-        returned_data = DBOperations.search_selected(delete_category, delete_criteria)
+        delete_category = self.get_category(category_function)
+        delete_category = self.str_category(delete_category)
+        delete_criteria = self.get_criteria(criteria_function, delete_category)
+        returned_data = self.search_selected(delete_category, delete_criteria)
         if len(returned_data) != 0:
-            if DBOperations.confirm():
-                DBOperations.print_employees_to_delete(returned_data)
-                DBOperations.delete_selected_employees(delete_category, delete_criteria)
+            if self.confirm():
+                self.print_employees_to_delete(returned_data)
+                self.delete_selected_employees(delete_category, delete_criteria)
                 print("Employee(s) successfully deleted")
             else:
                 return
@@ -358,26 +347,23 @@ class DBOperations:
             return
 
     # Prints employees to be deleted
-    @staticmethod
-    def print_employees_to_delete(returned_data):
+    def print_employees_to_delete(self, returned_data):
         if len(returned_data) == 0:
             print("No employees match the delete criteria.")
         else:
             print("The following", str(len(returned_data)), "employee/s will be deleted: ")
-        DBOperations.print_data(returned_data)
+        self.print_data(returned_data)
 
     # Deletes matching employees
-    @staticmethod
-    def delete_selected_employees(delete_category, delete_criteria):
-        with conn:
-            c.execute("DELETE from employees WHERE " + delete_category + " = :delete_criteria",
+    def delete_selected_employees(self, delete_category, delete_criteria):
+        with self.conn:
+            self.cur.execute("DELETE from employees WHERE " + delete_category + " = :delete_criteria",
                       {'delete_criteria': delete_criteria})
 
     # Closes connection and commits changes
-    @staticmethod
-    def close_conn():
-        conn.commit()
-        conn.close()
+    def close_conn(self):
+        self.conn.commit()
+        self.conn.close()
 
 
 # Employee class
