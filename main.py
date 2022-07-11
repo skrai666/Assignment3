@@ -30,14 +30,12 @@ class DBOperations:
                 print("Warning: Table already created")
 
     # Calls methods to insert data into database
-    @staticmethod
-    def insert_data():
+    def insert_data(self):
         employee = DBOperations.create_employee()
         DBOperations.insert_employee(employee)
 
     # Intakes user input and creates employee instance using input
-    @staticmethod
-    def create_employee():
+    def create_employee(self):
         id = None
         title = input("Employee title: ").lower()
         forename = input("Employee forename: ").lower().strip()
@@ -50,8 +48,7 @@ class DBOperations:
     # Normalises salary
     # Converts salary to float and rounds salary to 2 decimal places
     # If user entry is not a number, i.e. cannot be converted, asks user to re-input salary
-    @staticmethod
-    def normalise_salary_type(salary):
+    def normalise_salary_type(self, salary):
         while True:
             try:
                 salary = "{:.2f}".format(float(salary))
@@ -62,8 +59,7 @@ class DBOperations:
         return salary
 
     # inserts employee into employee database
-    @staticmethod
-    def insert_employee(employee):
+    def insert_employee(self, employee):
         with conn:
             c.execute("INSERT INTO employees VALUES (:id, :title, :forename, :surname, :email, :salary)",
                       {'id': None, 'title': employee.title, 'forename': employee.forename, 'surname': employee.surname,
@@ -72,8 +68,7 @@ class DBOperations:
             print("Employee added.")
 
     # Gets all data from the database and prints to console
-    @staticmethod
-    def view_all_data():
+    def view_all_data(self):
         with conn:
             c.execute("SELECT * FROM employees")
             employee_data = c.fetchall()
@@ -83,8 +78,7 @@ class DBOperations:
                 print("No records in database")
 
     # Updates data matching user input in the database and prints updated record to console
-    @staticmethod
-    def update_data():
+    def update_data(self):
         category_function = 'Select users to update'
         criteria_function = 'search criterion'
         update_category_function = 'Select a category to update'
@@ -109,8 +103,7 @@ class DBOperations:
                 return
 
     # Confirms with user if update should continue
-    @staticmethod
-    def confirm():
+    def confirm(self):
         while True:
             try:
                 user_confirmation = int(input("""
@@ -128,8 +121,7 @@ class DBOperations:
                 continue
 
     # Prints heading stating the number of employees to be updated
-    @staticmethod
-    def print_number_matching_update(data_to_update):
+    def print_number_matching_update(self, data_to_update):
         if len(data_to_update) == 0:
             print("\nNo employees match the update criteria.\n")
         elif len(data_to_update) == 1:
@@ -138,8 +130,7 @@ class DBOperations:
             print("\n", len(data_to_update), "employees will be updated. Employees: \n")
 
     # Searches the database for employees matching the search category and criteria
-    @staticmethod
-    def update_selected(search_category, search_criteria, update_category, update_criteria):
+    def update_selected(self, search_category, search_criteria, update_category, update_criteria):
         with conn:
             c.execute(
                 "UPDATE employees SET " + update_category + " = :update_criteria WHERE " + search_category +
@@ -148,8 +139,7 @@ class DBOperations:
         return c.fetchall()
 
     # Searches for data matching user input in the database and prints to console
-    @staticmethod
-    def search_data():
+    def search_data(self):
         category_function = 'Search'
         criteria_function = 'search criterion'
         search_category = DBOperations.get_category(category_function)
@@ -160,8 +150,7 @@ class DBOperations:
         DBOperations.print_data(returned_data)
 
     # Prints heading stating the number of employees to be updated
-    @staticmethod
-    def print_number_matching_search(returned_data):
+    def print_number_matching_search(self, returned_data):
         if len(returned_data) == 0:
             print("No employees match the search criteria.")
         elif len(returned_data) == 1:
@@ -170,8 +159,7 @@ class DBOperations:
             print(len(returned_data), "employees have been found:")
 
     # Gets user category to update the database
-    @staticmethod
-    def get_update_category(category_function):
+    def get_update_category(self, category_function):
         while True:
             print(category_function + " using the following categories:")
             print("""
@@ -194,8 +182,7 @@ class DBOperations:
         return category
 
     # Converts update category number to variable name
-    @staticmethod
-    def str_update_category(int_category):
+    def str_update_category(self, int_category):
         if int_category == 1:
             category = str('title')
         elif int_category == 2:
@@ -209,8 +196,7 @@ class DBOperations:
         return category
 
     # Gets user category to search the database
-    @staticmethod
-    def get_category(category_function):
+    def get_category(self, category_function):
         while True:
             print(category_function + " using the following categories:")
             print("""
@@ -234,8 +220,7 @@ class DBOperations:
         return category
 
     # Converts search category number to variable name
-    @staticmethod
-    def str_category(int_category):
+    def str_category(self, int_category):
         if int_category == 1:
             category = str('id')
         elif int_category == 2:
@@ -251,8 +236,7 @@ class DBOperations:
         return category
 
     # Gets user criteria to search the database
-    @staticmethod
-    def get_criteria(criteria_function, category):
+    def get_criteria(self, criteria_function, category):
         while True:
             if category == 'id':
                 try:
@@ -275,8 +259,7 @@ class DBOperations:
         return criteria
 
     # Prints employee data to the console
-    @staticmethod
-    def print_data(employee_data):
+    def print_data(self, employee_data):
         for employee in employee_data:
             print("Employee ID: ", employee[0])
             print("Name: ", employee[1].title() + ' ' + employee[2].title() + ' ' + employee[3].title())
@@ -285,16 +268,14 @@ class DBOperations:
             print("\n")
 
     # Searches the database for employees matching the search category and criteria
-    @staticmethod
-    def search_selected(search_category, search_criteria):
+    def search_selected(self, search_category, search_criteria):
         with conn:
             c.execute("SELECT * FROM employees WHERE " + search_category + " = :search_criteria",
                       {'search_criteria': search_criteria})
         return c.fetchall()
 
     # Deletes data from the database
-    @staticmethod
-    def delete_data():
+    def delete_data(self):
         user_delete_input = DBOperations.delete_menu()
         if user_delete_input == 1:
             DBOperations.delete_all()
@@ -304,8 +285,7 @@ class DBOperations:
             return
 
     # Prints delete menu and intakes user choice
-    @staticmethod
-    def delete_menu():
+    def delete_menu(self):
         while True:
             print("""Please choose from the following delete options: 
                1. Delete all employees 
@@ -325,8 +305,7 @@ class DBOperations:
         return user_delete_input
 
     # Deletes all employees from the database
-    @staticmethod
-    def delete_all():
+    def delete_all(self):
         with conn:
             while True:
                 if DBOperations.confirm():
@@ -338,8 +317,7 @@ class DBOperations:
                     return
 
     # Calls functions to get user input delete category and criteria from the database and deletes matching employees
-    @staticmethod
-    def delete_employee():
+    def delete_employee(self):
         category_function = 'Delete'
         criteria_function = 'delete criterion'
         delete_category = DBOperations.get_category(category_function)
@@ -358,8 +336,7 @@ class DBOperations:
             return
 
     # Prints employees to be deleted
-    @staticmethod
-    def print_employees_to_delete(returned_data):
+    def print_employees_to_delete(self, returned_data):
         if len(returned_data) == 0:
             print("No employees match the delete criteria.")
         else:
@@ -367,15 +344,13 @@ class DBOperations:
         DBOperations.print_data(returned_data)
 
     # Deletes matching employees
-    @staticmethod
-    def delete_selected_employees(delete_category, delete_criteria):
+    def delete_selected_employees(self, delete_category, delete_criteria):
         with conn:
             c.execute("DELETE from employees WHERE " + delete_category + " = :delete_criteria",
                       {'delete_criteria': delete_criteria})
 
     # Closes connection and commits changes
-    @staticmethod
-    def close_conn():
+    def close_conn(self):
         conn.commit()
         conn.close()
 
