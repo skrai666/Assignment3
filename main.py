@@ -1,23 +1,31 @@
 import sqlite3
 
-conn = sqlite3.connect("Employee.db")
+# conn = sqlite3.connect("Employee.db")
 
-c = conn.cursor()
+# c = conn.cursor()
 
 
 # Database class containing all database functions
 class DBOperations:
 
-    # Creates table
+    def __init__(self):
+        try:
+            self.conn = sqlite3.connect("DBName.db")
+            self.cur = self.conn.cursor()
+            self.conn.commit()
+        except Exception as e:
+            print(e)
 
+
+    # Creates table
     def create_table(self):
-        with conn:
+        with self.conn:
             # check if table exists, if not create table
-            list_of_tables = c.execute(
+            list_of_tables = self.cur.execute(
                 """SELECT name FROM sqlite_master WHERE type='table'
                     AND name='employees'; """).fetchall()
             if not list_of_tables:
-                c.execute("""CREATE TABLE IF NOT EXISTS employees (
+                self.cur.execute("""CREATE TABLE IF NOT EXISTS employees (
                             id INTEGER PRIMARY KEY AUTOINCREMENT,
                             title TEXT NOT NULL,
                             forename TEXT NOT NULL,
@@ -31,8 +39,8 @@ class DBOperations:
 
     # Calls methods to insert data into database
     def insert_data(self):
-        employee = DBOperations.create_employee()
-        DBOperations.insert_employee(employee)
+        employee = DBOperations.create_employee(self)
+        DBOperations.insert_employee(self, employee)
 
     # Intakes user input and creates employee instance using input
     def create_employee(self):
@@ -41,7 +49,7 @@ class DBOperations:
         forename = input("Employee forename: ").lower().strip()
         surname = input("Employee surname: ").lower().strip()
         email = input("Employee email: ").lower().strip()
-        salary = DBOperations.normalise_salary_type(input("Employee salary: "))
+        salary = DBOperations.normalise_salary_type(self, input("Employee salary: "))
         employee = Employee(id, title, forename, surname, email, salary)
         return employee
 
@@ -60,8 +68,8 @@ class DBOperations:
 
     # inserts employee into employee database
     def insert_employee(self, employee):
-        with conn:
-            c.execute("INSERT INTO employees VALUES (:id, :title, :forename, :surname, :email, :salary)",
+        with self.conn:
+            self.cur.execute("INSERT INTO employees VALUES (:id, :title, :forename, :surname, :email, :salary)",
                       {'id': None, 'title': employee.title, 'forename': employee.forename, 'surname': employee.surname,
                        'email': employee.email,
                        'salary': employee.salary})
@@ -69,9 +77,9 @@ class DBOperations:
 
     # Gets all data from the database and prints to console
     def view_all_data(self):
-        with conn:
-            c.execute("SELECT * FROM employees")
-            employee_data = c.fetchall()
+        with self.conn:
+            self.cur.execute("SELECT * FROM employees")
+            employee_data = self.cur.fetchall()
             if len(employee_data) > 0:
                 DBOperations.print_data(employee_data)
             else:
@@ -131,12 +139,12 @@ class DBOperations:
 
     # Searches the database for employees matching the search category and criteria
     def update_selected(self, search_category, search_criteria, update_category, update_criteria):
-        with conn:
-            c.execute(
+        with self.conn:
+            self.cur.execute(
                 "UPDATE employees SET " + update_category + " = :update_criteria WHERE " + search_category +
                 " = :search_criteria",
                 {'search_criteria': search_criteria, 'update_criteria': update_criteria})
-        return c.fetchall()
+        return self.cur.fetchall()
 
     # Searches for data matching user input in the database and prints to console
     def search_data(self):
@@ -269,10 +277,10 @@ class DBOperations:
 
     # Searches the database for employees matching the search category and criteria
     def search_selected(self, search_category, search_criteria):
-        with conn:
-            c.execute("SELECT * FROM employees WHERE " + search_category + " = :search_criteria",
+        with self.conn:
+            self.cur.execute("SELECT * FROM employees WHERE " + search_category + " = :search_criteria",
                       {'search_criteria': search_criteria})
-        return c.fetchall()
+        return self.cur.fetchall()
 
     # Deletes data from the database
     def delete_data(self):
@@ -306,11 +314,11 @@ class DBOperations:
 
     # Deletes all employees from the database
     def delete_all(self):
-        with conn:
+        with self.conn:
             while True:
                 if DBOperations.confirm():
-                    c.execute("DELETE FROM employees")
-                    print("All", c.rowcount, "records have been deleted.")
+                    self.cur.execute("DELETE FROM employees")
+                    print("All", self.cur.rowcount, "records have been deleted.")
                     print("No data remains.")
                     return
                 else:
@@ -345,14 +353,14 @@ class DBOperations:
 
     # Deletes matching employees
     def delete_selected_employees(self, delete_category, delete_criteria):
-        with conn:
-            c.execute("DELETE from employees WHERE " + delete_category + " = :delete_criteria",
+        with self.conn:
+            self.cur.execute("DELETE from employees WHERE " + delete_category + " = :delete_criteria",
                       {'delete_criteria': delete_criteria})
 
     # Closes connection and commits changes
     def close_conn(self):
-        conn.commit()
-        conn.close()
+        self.conn.commit()
+        self.conn.close()
 
 
 # Employee class
